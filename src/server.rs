@@ -2,13 +2,14 @@ use std::net::TcpListener;
 use std::io::Read;
 use std::convert::TryFrom;
 use crate::http::{Request, Response, StatusCode, ParseError};
+use crate::http::headers::Headers;
 
 pub trait Handler {
     fn handler_request(&mut self, request: &Request) -> Response;
 
     fn handler_bad_request(&mut self, e: &ParseError) -> Response {
         println!("Failed to parse request: {}", e);
-        Response::new(StatusCode::BadRequest, None)
+        Response::new(StatusCode::BadRequest, None, Headers::new())
     }
 }
 

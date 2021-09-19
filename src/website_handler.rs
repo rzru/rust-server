@@ -1,5 +1,5 @@
 use super::server::Handler;
-use super::http::{Request, Response, Method, StatusCode};
+use super::http::{Request, Response, Method, StatusCode, Headers};
 use std::fs;
 
 pub struct WebsiteHandler {
@@ -30,16 +30,21 @@ impl WebsiteHandler {
 
 impl Handler for WebsiteHandler {
     fn handler_request(&mut self, request: &Request) -> Response {
+        let mut html_headers = Headers::new();
+        html_headers.add("Content-Type", "text/html");
+
+        let empty_headers = Headers::new();
+
         match request.method() {
             Method::GET => match request.path() {
-                "/" => Response::new(StatusCode::Ok, self.read_file("index.html")),
-                "/hello" => Response::new(StatusCode::Ok, self.read_file("hello.html")),
+                "/" => Response::new(StatusCode::Ok, self.read_file("index.html"), html_headers),
+                "/hello" => Response::new(StatusCode::Ok, self.read_file("hello.html"), html_headers),
                 path => match self.read_file(path) {
-                    Some(contents) => Response::new(StatusCode::Ok, Some(contents)),
-                    None => Response::new(StatusCode::NotFound, None),
+                    Some(contents) => Response::new(StatusCode::Ok, Some(contents), empty_headers),
+                    None => Response::new(StatusCode::NotFound, None, empty_headers),
                 },
             }
-            _ => Response::new(StatusCode::NotFound, None),
+            _ => Response::new(StatusCode::NotFound, None, empty_headers),
         }
     }
 }

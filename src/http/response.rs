@@ -1,16 +1,16 @@
 use super::StatusCode;
 use std::io::{Write, Result as IoResult};
 use crate::http::headers::Headers;
-use std::collections::HashMap;
 
-pub struct Response {
+pub struct Response<'a> {
     status_code: StatusCode,
     body: Option<String>,
+    headers: Headers<'a>,
 }
 
-impl Response {
-    pub fn new(status_code: StatusCode, body: Option<String>) -> Self {
-        Self { status_code, body }
+impl<'a> Response<'a> {
+    pub fn new(status_code: StatusCode, body: Option<String>, headers: Headers<'a>) -> Self {
+        Self { status_code, body, headers }
     }
 
     pub fn send(&self, stream: &mut impl Write) -> IoResult<()> {
@@ -19,17 +19,12 @@ impl Response {
             None => "",
         };
 
-        let mut headers_hashmap = HashMap::new();
-        headers_hashmap.insert("Content-Type", "text/html");
-
-        let headers = Headers::new(headers_hashmap);
-
         write!(
             stream,
             "HTTP/1.1 {} {}\r\n{}\r\n{}",
             self.status_code,
             self.status_code.reason_phrase(),
-            headers,
+            self.headers,
             body,
         )
     }

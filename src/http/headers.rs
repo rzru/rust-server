@@ -7,8 +7,12 @@ pub struct Headers<'a> {
 }
 
 impl<'a> Headers<'a> {
-    pub fn new(data: HashMap<&'a str, &'a str>) -> Self {
-        Self { data }
+    pub fn new() -> Self {
+        Self { data: HashMap::new() }
+    }
+
+    pub fn add(&mut self, key: &'a str, val: &'a str) {
+        self.data.insert(key, val);
     }
 }
 
