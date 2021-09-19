@@ -1,50 +1,42 @@
-use server::Server;
-use http::request::Request;
+use std::net::TcpListener;
+use std::io::Read;
+use std::convert::TryFrom;
+use crate::http::Request;
 
-fn main() {
-    let server = Server::new("127.0.0.1:8080".to_string());
-
-    server.run();
+pub struct Server {
+    addr: String
 }
 
-mod server {
-    pub struct Server {
-        addr: String,
-    }
-
-    impl Server {
-        pub fn new(addr: String) -> Self {
-            Self { addr }
-        }
-
-        pub fn run(self) {
-            println!("Server is listening on {}", self.addr)
-        }
-    }
-}
-
-mod http {
-    mod method {
-        pub enum Method {
-            GET,
-            POST,
-            PUT,
-            PATCH,
-            DELETE,
-            HEAD,
-            CONNECT,
-            OPTIONS,
-            TRACE,
+impl Server {
+    pub fn new(addr: String) -> Self {
+        Self {
+            addr
         }
     }
 
-    pub mod request {
-        use super::method::Method;
+    pub fn run(self) {
+        println!("Server is listening on {}", self.addr);
 
-        pub struct Request {
-            path: String,
-            query_string: Option<String>,
-            method: Method,
+        let listener = TcpListener::bind(&self.addr).unwrap();
+
+        loop {
+            match listener.accept() {
+                Ok((mut stream, _)) => {
+                    let mut buffer = [0; 1024];
+                    match stream.read(&mut buffer) {
+                        Ok(_) => {
+                            match Request::try_from(&buffer[..]) {
+                                Ok(request) => {
+                                    dbg!(request);
+                                }
+                                Err(e) => println!("Failed to parse request: {}", e),
+                            }
+                        }
+                        Err(e) => println!("Failed to accept a message: {}", e),
+                    }
+                }
+                Err(e) => println!("Failed to establish connection: {}", e)
+            }
         }
     }
 }
