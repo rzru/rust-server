@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::str::FromStr;
 
 #[derive(Debug)]
 pub struct QueryString<'buf> {

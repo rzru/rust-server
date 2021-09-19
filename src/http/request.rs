@@ -5,12 +5,28 @@ use std::error::Error;
 use std::str;
 use std::fmt::{Display, Result as FmtResult, Formatter, Debug};
 use std::str::{Utf8Error, from_utf8};
+use crate::http::headers::Headers;
 
 #[derive(Debug)]
 pub struct Request<'buf> {
     path: &'buf str,
     query_string: Option<QueryString<'buf>>,
     method: Method,
+    headers: Headers<'buf>
+}
+
+impl<'buf> Request<'buf> {
+    pub fn path(&self) -> &str {
+        &self.path
+    }
+
+    pub fn method(&self) -> &Method {
+        &self.method
+    }
+
+    pub fn query_string(&self) -> Option<&QueryString> {
+        self.query_string.as_ref()
+    }
 }
 
 impl<'buf> TryFrom<&'buf [u8]> for Request<'buf> {
@@ -20,16 +36,16 @@ impl<'buf> TryFrom<&'buf [u8]> for Request<'buf> {
         let request = from_utf8(buf)?;
         let (method, request) = get_next_word(request).ok_or(ParseError::InvalidRequest)?;
         let (mut path, request) = get_next_word(request).ok_or(ParseError::InvalidRequest)?;
-        let (protocol, _) = get_next_word(request).ok_or(ParseError::InvalidRequest)?;
+        let (protocol, next) = get_next_word(request).ok_or(ParseError::InvalidRequest)?;
 
         if protocol != "HTTP/1.1" {
             return Err(ParseError::InvalidProtocol)
         }
 
         let method: Method = method.parse()?;
+        let headers: Headers = next.into();
 
         let mut query_string = None;
-
         if let Some(i) = path.find('?') {
             query_string = Some(QueryString::from(&path[i + 1..]));
             path = &path[..i];
@@ -38,7 +54,8 @@ impl<'buf> TryFrom<&'buf [u8]> for Request<'buf> {
         Ok(Self {
             path,
             query_string,
-            method
+            method,
+            headers,
         })
     }
 }
